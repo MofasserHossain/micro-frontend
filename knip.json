@@ -1,0 +1,41 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    "apps/cart": {
+      "entry": ["module-federation.config.ts", "src/App.tsx"],
+      "project": ["*.ts", "src/**/*.tsx"]
+    },
+    "apps/checkout": {
+      "entry": ["module-federation.config.ts", "src/App.tsx"],
+      "project": ["*.ts", "src/**/*.tsx"]
+    },
+    "apps/home": {
+      "entry": ["module-federation.config.ts", "src/App.tsx"],
+      "project": ["*.ts", "src/**/*.tsx"]
+    },
+    "apps/product": {
+      "entry": ["module-federation.config.ts", "src/App.tsx"],
+      "project": ["*.ts", "src/**/*.{ts,tsx}"]
+    },
+    "apps/shell": {
+      "entry": ["module-federation.config.ts", "src/App.tsx"],
+      "ignoreDependencies": ["cart", "checkout", "home", "product"],
+      "project": ["*.ts", "src/**/*.tsx"]
+    },
+    "packages/api": {
+      "project": ["src/**/*.ts"]
+    },
+    "packages/cart-store": {
+      "project": ["src/**/*.ts"]
+    },
+    "packages/config": {
+      "project": ["src/**/*.ts"]
+    },
+    "packages/types": {
+      "project": ["src/**/*.ts"]
+    },
+    "packages/ui": {
+      "project": ["src/**/*.{ts,tsx}"]
+    }
+  }
+}
