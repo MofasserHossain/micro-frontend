@@ -1,0 +1,36 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+file_include_globs = """
+.env
+.env.local
+apps/*/.env
+apps/*/.env.local
+"""
+
+[scripts]
+setup = "./.conductor/scripts/setup.sh"
+archive = "./.conductor/scripts/archive.sh"
+run_mode = "concurrent"
+
+[scripts.run.dev]
+available_in = ["local"]
+command = "./.conductor/scripts/run.sh"
+default = true
+icon = "play"
+
+[scripts.run.dev-55010]
+available_in = ["local"]
+command = "PORT_BASE=55010 ./.conductor/scripts/run.sh"
+icon = "play"
+
+[scripts.run.check]
+command = "pnpm verify"
+icon = "check-circle"
+
+[scripts.run.lint]
+command = "pnpm lint"
+icon = "list-checks"
+
+[scripts.run.deadcode]
+command = "pnpm deadcode"
+icon = "scan-search"

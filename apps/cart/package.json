@@ -1,0 +1,22 @@
+{
+  "name": "@ecommerce-mf/cart",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite --host 0.0.0.0",
+    "preview": "vite preview --host 0.0.0.0 --port 5003"
+  },
+  "dependencies": {
+    "@ecommerce-mf/cart-store": "workspace:*",
+    "@ecommerce-mf/ui": "workspace:*",
+    "lucide-react": "1.34.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-router-dom": "7.18.2"
+  },
+  "devDependencies": {
+    "@ecommerce-mf/config": "workspace:*"
+  }
+}

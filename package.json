@@ -1,0 +1,40 @@
+{
+  "name": "ecommerce-micro-frontend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r --filter './apps/*' build",
+    "deadcode": "knip",
+    "dev": "pnpm --parallel --filter @ecommerce-mf/shell --filter @ecommerce-mf/home --filter @ecommerce-mf/product --filter @ecommerce-mf/cart --filter @ecommerce-mf/checkout dev",
+    "dev:cart": "pnpm --filter @ecommerce-mf/cart dev",
+    "dev:checkout": "pnpm --filter @ecommerce-mf/checkout dev",
+    "dev:home": "pnpm --filter @ecommerce-mf/home dev",
+    "dev:product": "pnpm --filter @ecommerce-mf/product dev",
+    "dev:shell": "pnpm --filter @ecommerce-mf/shell dev",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint . --fix",
+    "preview": "pnpm --parallel --filter './apps/*' preview",
+    "typecheck": "tsc --noEmit",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm build && pnpm deadcode"
+  },
+  "devDependencies": {
+    "@module-federation/vite": "1.20.9",
+    "@types/node": "26.3.0",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.5",
+    "@vitejs/plugin-react": "6.1.0",
+    "knip": "6.32.3",
+    "oxfmt": "0.65.0",
+    "oxlint": "1.80.0",
+    "typescript": "7.0.2",
+    "vite": "8.2.2"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "packageManager": "pnpm@10.14.0"
+}
