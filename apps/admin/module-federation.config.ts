@@ -5,10 +5,10 @@ export default createModuleFederationConfig({
     "./App": "./src/App.tsx",
   },
   manifest: true,
-  name: "product",
+  name: "admin",
   shared: {
     "@ecommerce-mf/api": { singleton: true },
-    "@ecommerce-mf/cart-store": { singleton: true },
+    "@ecommerce-mf/auth-store": { singleton: true },
     "@ecommerce-mf/ui": { singleton: true },
     "@tanstack/react-query": { singleton: true },
     "react-dom": { singleton: true },

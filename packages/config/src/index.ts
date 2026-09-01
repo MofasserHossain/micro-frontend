@@ -1,8 +1,10 @@
-export type AppName = "cart" | "checkout" | "home" | "product" | "shell";
+export type AppName = "account" | "admin" | "cart" | "checkout" | "home" | "product" | "shell";
 
 type Env = Record<string, string | undefined>;
 
 const appPortOffsets: Record<AppName, number> = {
+  account: 5,
+  admin: 6,
   cart: 3,
   checkout: 4,
   home: 1,

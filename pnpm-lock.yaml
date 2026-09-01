@@ -39,6 +39,71 @@ importers:
         specifier: 8.2.2
         version: 8.2.2(@types/node@26.3.0)(jiti@2.7.0)(yaml@2.9.0)
 
+  apps/account:
+    dependencies:
+      '@ecommerce-mf/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      '@ecommerce-mf/auth-store':
+        specifier: workspace:*
+        version: link:../../packages/auth-store
+      '@ecommerce-mf/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@tanstack/react-query':
+        specifier: 5.102.5
+        version: 5.102.5(react@19.2.8)
+      lucide-react:
+        specifier: 1.34.0
+        version: 1.34.0(react@19.2.8)
+      react:
+        specifier: 19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: 19.2.8
+        version: 19.2.8(react@19.2.8)
+      react-router-dom:
+        specifier: 7.18.2
+        version: 7.18.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+    devDependencies:
+      '@ecommerce-mf/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+
+  apps/admin:
+    dependencies:
+      '@ecommerce-mf/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      '@ecommerce-mf/auth-store':
+        specifier: workspace:*
+        version: link:../../packages/auth-store
+      '@ecommerce-mf/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      '@ecommerce-mf/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@tanstack/react-query':
+        specifier: 5.102.5
+        version: 5.102.5(react@19.2.8)
+      lucide-react:
+        specifier: 1.34.0
+        version: 1.34.0(react@19.2.8)
+      react:
+        specifier: 19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: 19.2.8
+        version: 19.2.8(react@19.2.8)
+      react-router-dom:
+        specifier: 7.18.2
+        version: 7.18.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+    devDependencies:
+      '@ecommerce-mf/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+
   apps/cart:
     dependencies:
       '@ecommerce-mf/cart-store':
@@ -69,6 +134,9 @@ importers:
       '@ecommerce-mf/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@ecommerce-mf/auth-store':
+        specifier: workspace:*
+        version: link:../../packages/auth-store
       '@ecommerce-mf/cart-store':
         specifier: workspace:*
         version: link:../../packages/cart-store
@@ -152,9 +220,9 @@ importers:
       react-dom:
         specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
-      zustand:
-        specifier: 5.0.15
-        version: 5.0.15(@types/react@19.2.18)(react@19.2.8)
+      react-router-dom:
+        specifier: 7.18.2
+        version: 7.18.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
     devDependencies:
       '@ecommerce-mf/config':
         specifier: workspace:*
@@ -162,9 +230,18 @@ importers:
 
   apps/shell:
     dependencies:
+      '@ecommerce-mf/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      '@ecommerce-mf/auth-store':
+        specifier: workspace:*
+        version: link:../../packages/auth-store
       '@ecommerce-mf/cart-store':
         specifier: workspace:*
         version: link:../../packages/cart-store
+      '@ecommerce-mf/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@ecommerce-mf/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -193,6 +270,18 @@ importers:
       '@ecommerce-mf/types':
         specifier: workspace:*
         version: link:../types
+
+  packages/auth-store:
+    dependencies:
+      '@ecommerce-mf/api':
+        specifier: workspace:*
+        version: link:../api
+      '@ecommerce-mf/types':
+        specifier: workspace:*
+        version: link:../types
+      zustand:
+        specifier: 5.0.15
+        version: 5.0.15(@types/react@19.2.18)(react@19.2.8)
 
   packages/cart-store:
     dependencies:

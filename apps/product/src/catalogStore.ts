@@ -1,20 +1,11 @@
-import type { ProductCategory } from "@ecommerce-mf/types";
-import { create } from "zustand";
+import { PRODUCT_CATEGORIES } from "@ecommerce-mf/api";
+import type { ProductSort } from "@ecommerce-mf/types";
 
-export const catalogCategories = ["All", "Apparel", "Bags", "Footwear", "Home", "Tech"] as const;
+export const catalogCategories = ["All", ...PRODUCT_CATEGORIES] as const;
 
-type CatalogCategory = ProductCategory | "All";
-
-type CatalogState = {
-  category: CatalogCategory;
-  search: string;
-  setCategory: (category: CatalogCategory) => void;
-  setSearch: (search: string) => void;
-};
-
-export const useCatalogStore = create<CatalogState>((set) => ({
-  category: "All",
-  search: "",
-  setCategory: (category) => set({ category }),
-  setSearch: (search) => set({ search }),
-}));
+export const productSortOptions: Array<[ProductSort, string]> = [
+  ["featured", "Featured first"],
+  ["newest", "Newest first"],
+  ["price-asc", "Price low to high"],
+  ["price-desc", "Price high to low"],
+];

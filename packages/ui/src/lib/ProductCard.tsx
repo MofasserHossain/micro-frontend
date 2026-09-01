@@ -1,42 +1,64 @@
 import type { Product } from "@ecommerce-mf/types";
-import { ShoppingCart } from "lucide-react";
+import { Eye, ShoppingBag } from "lucide-react";
 
 import { Button } from "./Button";
 import { formatCurrency } from "./formatCurrency";
 
 export type ProductCardProps = {
   actionLabel?: string;
+  detailsHref?: string;
   onAddToCart: (product: Product) => void;
   product: Product;
 };
 
-export function ProductCard({ actionLabel = "Add", onAddToCart, product }: ProductCardProps) {
+export function ProductCard({
+  actionLabel = "Quick add",
+  detailsHref,
+  onAddToCart,
+  product,
+}: ProductCardProps) {
+  const sizes = product.sizes.slice(0, 4).join(", ");
+  const sizeOverflow = product.sizes.length > 4 ? " +" : "";
+
   return (
     <article className="product-card">
-      <div className="product-card-media">
+      <a className="product-card-media" href={detailsHref ?? `/products/${product.slug}`}>
         <img alt={product.name} src={product.imageUrl} />
-        {product.badge ? <span className="product-badge">{product.badge}</span> : null}
-      </div>
+        {product.featured ? <span className="product-badge">Featured</span> : null}
+      </a>
       <div className="product-card-body">
-        <div>
-          <div className="product-meta">
-            <span>{product.brand}</span>
-            <span>{product.category}</span>
+        <div className="product-card-title-row">
+          <div className="min-w-0">
+            <a className="product-title-link" href={detailsHref ?? `/products/${product.slug}`}>
+              {product.name}
+            </a>
+            <p>{product.category}</p>
+            <p className="product-sizes">
+              {sizes}
+              {sizeOverflow}
+            </p>
           </div>
-          <h3>{product.name}</h3>
-          <p>{product.description}</p>
+          <strong>{formatCurrency(product.price)}</strong>
         </div>
-        <div className="product-card-footer">
-          <div>
-            <strong>{formatCurrency(product.price)}</strong>
-            <span>{product.rating.toFixed(1)} rating</span>
-          </div>
+        <div className="product-card-actions">
           <Button
-            icon={<ShoppingCart aria-hidden="true" size={16} />}
+            className="product-quick-add"
+            icon={<ShoppingBag aria-hidden="true" size={16} />}
             onClick={() => onAddToCart(product)}
+            variant="primary"
           >
             {actionLabel}
           </Button>
+          <a
+            aria-label={`View details for ${product.name}`}
+            className="button button-secondary product-view-button"
+            href={detailsHref ?? `/products/${product.slug}`}
+            title={`View ${product.name}`}
+          >
+            <span className="button-icon button-icon-only">
+              <Eye aria-hidden="true" size={16} />
+            </span>
+          </a>
         </div>
       </div>
     </article>

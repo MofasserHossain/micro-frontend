@@ -7,7 +7,10 @@ export default createModuleFederationConfig({
   manifest: true,
   name: "checkout",
   shared: {
+    "@ecommerce-mf/api": { singleton: true },
+    "@ecommerce-mf/auth-store": { singleton: true },
     "@ecommerce-mf/cart-store": { singleton: true },
+    "@ecommerce-mf/ui": { singleton: true },
     "@tanstack/react-query": { singleton: true },
     "react-dom": { singleton: true },
     "react-dom/": { singleton: true },

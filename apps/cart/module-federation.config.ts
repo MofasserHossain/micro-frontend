@@ -8,6 +8,7 @@ export default createModuleFederationConfig({
   name: "cart",
   shared: {
     "@ecommerce-mf/cart-store": { singleton: true },
+    "@ecommerce-mf/ui": { singleton: true },
     "react-dom": { singleton: true },
     "react-dom/": { singleton: true },
     "react-router-dom": { singleton: true },

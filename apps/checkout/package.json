@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ecommerce-mf/api": "workspace:*",
+    "@ecommerce-mf/auth-store": "workspace:*",
     "@ecommerce-mf/cart-store": "workspace:*",
     "@ecommerce-mf/ui": "workspace:*",
     "@tanstack/react-query": "5.102.5",

@@ -1,0 +1,7 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "../.."
+  },
+  "include": ["module-federation.config.ts", "src", "vite.config.ts"]
+}
