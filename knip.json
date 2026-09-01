@@ -1,6 +1,14 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
+    "apps/account": {
+      "entry": ["module-federation.config.ts", "src/App.tsx"],
+      "project": ["*.ts", "src/**/*.tsx"]
+    },
+    "apps/admin": {
+      "entry": ["module-federation.config.ts", "src/App.tsx"],
+      "project": ["*.ts", "src/**/*.tsx"]
+    },
     "apps/cart": {
       "entry": ["module-federation.config.ts", "src/App.tsx"],
       "project": ["*.ts", "src/**/*.tsx"]
@@ -19,10 +27,21 @@
     },
     "apps/shell": {
       "entry": ["module-federation.config.ts", "src/App.tsx"],
-      "ignoreDependencies": ["cart", "checkout", "home", "product"],
+      "ignoreDependencies": [
+        "@ecommerce-mf/api",
+        "account",
+        "admin",
+        "cart",
+        "checkout",
+        "home",
+        "product"
+      ],
       "project": ["*.ts", "src/**/*.tsx"]
     },
     "packages/api": {
+      "project": ["src/**/*.ts"]
+    },
+    "packages/auth-store": {
       "project": ["src/**/*.ts"]
     },
     "packages/cart-store": {

@@ -1,10 +1,11 @@
-import { selectCartSubtotal, useCartStore } from "@ecommerce-mf/cart-store";
+import { getCartItemId, selectCartSubtotal, useCartStore } from "@ecommerce-mf/cart-store";
 import { Button, EmptyState, formatCurrency } from "@ecommerce-mf/ui";
-import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function App() {
   const decrementItem = useCartStore((state) => state.decrementItem);
+  const incrementItem = useCartStore((state) => state.incrementItem);
   const items = useCartStore((state) => state.items);
   const removeItem = useCartStore((state) => state.removeItem);
   const subtotal = useCartStore(selectCartSubtotal);
@@ -13,22 +14,22 @@ export default function App() {
     return (
       <EmptyState
         action={
-          <Link className="button button-primary" to="/products">
-            Shop products
+          <Link className="button button-primary" to="/categories">
+            Shop clothing
           </Link>
         }
-        icon={<ShoppingCart aria-hidden="true" size={24} />}
+        icon={<ShoppingBag aria-hidden="true" size={24} />}
         title="Your cart is empty"
       />
     );
   }
 
   return (
-    <div>
-      <div className="section-heading">
+    <section className="content-band">
+      <div className="section-heading compact-heading">
         <div>
-          <h2>Shopping Cart</h2>
-          <p>{items.length} cart lines</p>
+          <p>Shopping bag</p>
+          <h2>{items.length} cart lines</h2>
         </div>
         <Link className="button button-primary" to="/checkout">
           Checkout
@@ -36,58 +37,68 @@ export default function App() {
       </div>
 
       <section className="cart-list">
-        {items.map((item) => (
-          <article className="cart-line" key={item.product.id}>
-            <img alt={item.product.name} src={item.product.imageUrl} />
-            <div>
-              <h3>{item.product.name}</h3>
-              <p>{formatCurrency(item.product.price)}</p>
-              <div className="quantity-tools">
-                <button
-                  aria-label={`Decrease ${item.product.name}`}
-                  onClick={() => decrementItem(item.product.id)}
-                  type="button"
-                >
-                  <Minus aria-hidden="true" size={16} />
-                </button>
-                <span>{item.quantity}</span>
-                <button
-                  aria-label={`Increase ${item.product.name}`}
-                  onClick={() => useCartStore.getState().addItem(item.product)}
-                  type="button"
-                >
-                  <Plus aria-hidden="true" size={16} />
-                </button>
+        {items.map((item) => {
+          const lineId = getCartItemId(item);
+
+          return (
+            <article className="cart-line" key={lineId}>
+              <Link to={`/products/${item.slug}`}>
+                <img alt={item.name} src={item.imageUrl} />
+              </Link>
+              <div>
+                <Link className="cart-line-title" to={`/products/${item.slug}`}>
+                  {item.name}
+                </Link>
+                <p>{formatCurrency(item.price)}</p>
+                <p>
+                  {item.size} / {item.color}
+                </p>
+                <div className="quantity-tools">
+                  <button
+                    aria-label={`Decrease ${item.name}`}
+                    onClick={() => decrementItem(lineId)}
+                    type="button"
+                  >
+                    <Minus aria-hidden="true" size={16} />
+                  </button>
+                  <span>{item.quantity}</span>
+                  <button
+                    aria-label={`Increase ${item.name}`}
+                    onClick={() => incrementItem(lineId)}
+                    type="button"
+                  >
+                    <Plus aria-hidden="true" size={16} />
+                  </button>
+                </div>
               </div>
-            </div>
-            <div className="cart-line-total">
-              <span>
-                {formatCurrency({
-                  amount: item.product.price.amount * item.quantity,
-                  currency: item.product.price.currency,
-                })}
-              </span>
-              <Button
-                aria-label={`Remove ${item.product.name}`}
-                icon={<Trash2 aria-hidden="true" size={16} />}
-                onClick={() => removeItem(item.product.id)}
-                variant="ghost"
-              />
-            </div>
-          </article>
-        ))}
+              <div className="cart-line-total">
+                <span>{formatCurrency(item.price * item.quantity)}</span>
+                <Button
+                  aria-label={`Remove ${item.name}`}
+                  icon={<Trash2 aria-hidden="true" size={16} />}
+                  onClick={() => removeItem(lineId)}
+                  variant="ghost"
+                />
+              </div>
+            </article>
+          );
+        })}
       </section>
 
-      <aside className="summary-panel" style={{ marginTop: 18 }}>
+      <aside className="summary-panel cart-summary">
         <div className="summary-row">
-          <span>Subtotal</span>
-          <strong>{formatCurrency({ amount: subtotal, currency: "USD" })}</strong>
+          <span>Items subtotal</span>
+          <strong>{formatCurrency(subtotal)}</strong>
         </div>
         <div className="summary-row">
-          <span>Shipping</span>
+          <span>Delivery</span>
           <strong>Calculated at checkout</strong>
         </div>
+        <div className="summary-row">
+          <span>Payment</span>
+          <strong>Cash on delivery</strong>
+        </div>
       </aside>
-    </div>
+    </section>
   );
 }

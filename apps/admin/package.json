@@ -1,16 +1,16 @@
 {
-  "name": "@ecommerce-mf/product",
+  "name": "@ecommerce-mf/admin",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "vite build",
     "dev": "vite --host 0.0.0.0",
-    "preview": "vite preview --host 0.0.0.0 --port 5002"
+    "preview": "vite preview --host 0.0.0.0 --port 5006"
   },
   "dependencies": {
     "@ecommerce-mf/api": "workspace:*",
-    "@ecommerce-mf/cart-store": "workspace:*",
+    "@ecommerce-mf/auth-store": "workspace:*",
     "@ecommerce-mf/types": "workspace:*",
     "@ecommerce-mf/ui": "workspace:*",
     "@tanstack/react-query": "5.102.5",

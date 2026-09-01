@@ -6,7 +6,9 @@
   "scripts": {
     "build": "pnpm -r --filter './apps/*' build",
     "deadcode": "knip",
-    "dev": "pnpm --parallel --filter @ecommerce-mf/shell --filter @ecommerce-mf/home --filter @ecommerce-mf/product --filter @ecommerce-mf/cart --filter @ecommerce-mf/checkout dev",
+    "dev": "pnpm --parallel --filter @ecommerce-mf/shell --filter @ecommerce-mf/home --filter @ecommerce-mf/product --filter @ecommerce-mf/cart --filter @ecommerce-mf/checkout --filter @ecommerce-mf/account --filter @ecommerce-mf/admin dev",
+    "dev:account": "pnpm --filter @ecommerce-mf/account dev",
+    "dev:admin": "pnpm --filter @ecommerce-mf/admin dev",
     "dev:cart": "pnpm --filter @ecommerce-mf/cart dev",
     "dev:checkout": "pnpm --filter @ecommerce-mf/checkout dev",
     "dev:home": "pnpm --filter @ecommerce-mf/home dev",
