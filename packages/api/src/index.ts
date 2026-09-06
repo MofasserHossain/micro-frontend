@@ -129,6 +129,166 @@ export class ApiValidationError extends Error {
   }
 }
 
+class BackendApiError extends Error {
+  code?: string;
+  status: number;
+
+  constructor(status: number, message: string, code?: string) {
+    super(message);
+    this.code = code;
+    this.name = "BackendApiError";
+    this.status = status;
+  }
+}
+
+type ApiEnvelope<T> = {
+  data: T;
+};
+
+type ApiErrorEnvelope = {
+  error?: {
+    code?: string;
+    message?: string;
+  };
+};
+
+const authErrorCodes = new Set<AuthErrorCode>([
+  "expired_session",
+  "forbidden",
+  "invalid_credentials",
+  "unauthenticated",
+]);
+
+const getRemoteApiBaseUrl = () => {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+
+  if (!apiBaseUrl || typeof fetch === "undefined") {
+    return null;
+  }
+
+  return apiBaseUrl.replace(/\/+$/, "");
+};
+
+const isRemoteApiEnabled = () => Boolean(getRemoteApiBaseUrl());
+
+const appendSearchParam = (
+  params: URLSearchParams,
+  key: string,
+  value?: boolean | number | readonly string[] | string,
+) => {
+  if (value === undefined || value === "" || (Array.isArray(value) && value.length === 0)) {
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      if (item) {
+        params.append(key, item);
+      }
+    }
+    return;
+  }
+
+  params.set(key, String(value));
+};
+
+const withQuery = (
+  path: string,
+  query: Record<string, boolean | number | readonly string[] | string | undefined>,
+) => {
+  const params = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(query)) {
+    appendSearchParam(params, key, value);
+  }
+
+  const queryString = params.toString();
+
+  return queryString ? `${path}?${queryString}` : path;
+};
+
+const parseApiPayload = async (response: Response) => {
+  const rawPayload = await response.text();
+
+  if (!rawPayload) {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(rawPayload) as ApiEnvelope<unknown> | ApiErrorEnvelope;
+  } catch {
+    return undefined;
+  }
+};
+
+const toAuthErrorCode = (status: number, code?: string): AuthErrorCode | null => {
+  if (code && authErrorCodes.has(code as AuthErrorCode)) {
+    return code as AuthErrorCode;
+  }
+
+  if (status === 401) {
+    return "unauthenticated";
+  }
+
+  if (status === 403) {
+    return "forbidden";
+  }
+
+  return null;
+};
+
+const apiRequest = async <T>(
+  path: string,
+  init: RequestInit = {},
+  session?: AuthSession | null,
+): Promise<T> => {
+  const apiBaseUrl = getRemoteApiBaseUrl();
+
+  if (!apiBaseUrl) {
+    throw new BackendApiError(0, "API base URL is not configured.");
+  }
+
+  const headers = new Headers(init.headers);
+
+  if (session) {
+    headers.set(AUTH_CSRF_HEADER_NAME, session.csrfToken);
+  }
+
+  if (init.body && !(init.body instanceof FormData) && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    ...init,
+    credentials: "include",
+    headers,
+  });
+  const payload = await parseApiPayload(response);
+
+  if (!response.ok) {
+    const errorPayload = payload as ApiErrorEnvelope | undefined;
+    const code = errorPayload?.error?.code;
+    const message =
+      errorPayload?.error?.message ?? `Request failed with status ${response.status}.`;
+    const authErrorCode = toAuthErrorCode(response.status, code);
+
+    if (authErrorCode) {
+      throw new AuthApiError(authErrorCode, message);
+    }
+
+    throw new BackendApiError(response.status, message, code);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return (payload as ApiEnvelope<T>).data;
+};
+
+const isNotFoundError = (error: unknown) =>
+  error instanceof BackendApiError && error.status === 404;
+
 type CatalogTemplate = {
   adjectives: string[];
   basePrice: number;
@@ -783,6 +943,26 @@ export const fetchProducts = async (
     includeInactive?: boolean;
   },
 ): Promise<Product[]> => {
+  if (isRemoteApiEnabled()) {
+    const categories =
+      options?.categories ??
+      (options?.category && options.category !== "All" ? [options.category] : []);
+    const { products } = await apiRequest<{ products: Product[] }>(
+      withQuery("/catalog/products", {
+        category: categories,
+        color: options?.colors,
+        featuredOnly: options?.featuredOnly,
+        maxPrice: options?.maxPrice,
+        minPrice: options?.minPrice,
+        q: options?.query,
+        size: options?.sizes,
+        sort: options?.sort,
+      }),
+    );
+
+    return products;
+  }
+
   const query = options?.query?.trim().toLowerCase() ?? "";
   const categories =
     options?.categories ??
@@ -840,12 +1020,36 @@ export const fetchFeaturedProducts = async (): Promise<Product[]> =>
   fetchProducts({ featuredOnly: true });
 
 export const fetchProductBySlug = async (slug: string): Promise<Product | null> =>
-  wait(getProductsSnapshot().find((product) => product.slug === slug && product.active) ?? null);
+  isRemoteApiEnabled()
+    ? apiRequest<{ product: Product }>(`/catalog/products/${encodeURIComponent(slug)}`)
+        .then(({ product }) => product)
+        .catch((error: unknown) => {
+          if (isNotFoundError(error)) {
+            return null;
+          }
+
+          throw error;
+        })
+    : wait(
+        getProductsSnapshot().find((product) => product.slug === slug && product.active) ?? null,
+      );
 
 export const fetchProductById = async (id: string): Promise<Product | null> =>
-  wait(getProductsSnapshot().find((product) => product.id === id) ?? null);
+  isRemoteApiEnabled()
+    ? fetchProducts({ includeInactive: true }).then(
+        (products) => products.find((product) => product.id === id) ?? null,
+      )
+    : wait(getProductsSnapshot().find((product) => product.id === id) ?? null);
 
 export const fetchCategorySummaries = async (): Promise<CategorySummary[]> => {
+  if (isRemoteApiEnabled()) {
+    const { categories } = await apiRequest<{ categories: CategorySummary[] }>(
+      "/catalog/categories",
+    );
+
+    return categories;
+  }
+
   const products = getProductsSnapshot().filter((product) => product.active);
 
   return wait(
@@ -865,7 +1069,9 @@ export const fetchCategorySummaries = async (): Promise<CategorySummary[]> => {
 };
 
 export const fetchCatalogFacets = async (): Promise<CatalogFacets> => {
-  const products = getProductsSnapshot().filter((product) => product.active);
+  const products = isRemoteApiEnabled()
+    ? await fetchProducts()
+    : getProductsSnapshot().filter((product) => product.active);
   const categoryCounts = getFacetCounts(products, (product) => [product.category]);
   const sizeCounts = getFacetCounts(products, (product) => product.sizes);
   const colorCounts = getFacetCounts(products, (product) => product.colors);
@@ -899,6 +1105,15 @@ export const fetchCatalogFacets = async (): Promise<CatalogFacets> => {
 export const sumCart = (items: CartItem[]) => calculateSubtotal(items);
 
 export const signIn = async (credentials: SignInCredentials): Promise<AuthSession> => {
+  if (isRemoteApiEnabled()) {
+    const { session } = await apiRequest<{ session: AuthSession }>("/auth/login", {
+      body: JSON.stringify(credentials),
+      method: "POST",
+    });
+
+    return session;
+  }
+
   const email = credentials.email.trim().toLowerCase();
 
   if (!email || !email.includes("@") || credentials.password.length < 8) {
@@ -924,6 +1139,12 @@ export const signIn = async (credentials: SignInCredentials): Promise<AuthSessio
 };
 
 export const restoreSession = async (): Promise<AuthSession | null> => {
+  if (isRemoteApiEnabled()) {
+    const { session } = await apiRequest<{ session: AuthSession | null }>("/auth/session");
+
+    return session;
+  }
+
   const sessionId = readSessionId();
 
   if (!sessionId) {
@@ -943,6 +1164,11 @@ export const restoreSession = async (): Promise<AuthSession | null> => {
 };
 
 export const signOut = async (session?: AuthSession | null): Promise<void> => {
+  if (isRemoteApiEnabled()) {
+    await apiRequest<void>("/auth/logout", { method: "POST" }, session);
+    return;
+  }
+
   const sessionId = readSessionId();
 
   if (sessionId) {
@@ -968,6 +1194,15 @@ export const registerCustomer = async ({
   fullName,
   password,
 }: RegisterCustomerInput): Promise<AuthUser> => {
+  if (isRemoteApiEnabled()) {
+    const { user } = await apiRequest<{ user: AuthUser }>("/auth/register", {
+      body: JSON.stringify({ email, fullName, password }),
+      method: "POST",
+    });
+
+    return user;
+  }
+
   const normalizedEmail = email.trim().toLowerCase();
   const trimmedName = requireText(fullName, "Full name");
 
@@ -1021,6 +1256,19 @@ export const submitOrder = async ({
   checkout,
   session = null,
 }: SubmitOrderInput): Promise<Order> => {
+  if (isRemoteApiEnabled()) {
+    const { order } = await apiRequest<{ order: Order }>(
+      "/orders",
+      {
+        body: JSON.stringify(checkout),
+        method: "POST",
+      },
+      session,
+    );
+
+    return order;
+  }
+
   if (session) {
     requirePermission(session, "checkout:create");
     createSessionRequestInit(session, { method: "POST" });
@@ -1100,6 +1348,13 @@ export const submitOrder = async ({
 };
 
 export const fetchCustomerOrders = async (session: AuthSession | null): Promise<Order[]> => {
+  if (isRemoteApiEnabled()) {
+    requirePermission(session, "orders:read");
+    const { orders } = await apiRequest<{ orders: Order[] }>("/orders", {}, session);
+
+    return orders;
+  }
+
   const authorizedSession = requirePermission(session, "orders:read");
   const orders = getOrdersSnapshot()
     .filter(
@@ -1115,6 +1370,18 @@ export const fetchOrderById = async (
   orderId: string,
   session?: AuthSession | null,
 ): Promise<Order | null> => {
+  if (isRemoteApiEnabled()) {
+    return apiRequest<{ order: Order }>(`/orders/${encodeURIComponent(orderId)}`, {}, session)
+      .then(({ order }) => order)
+      .catch((error: unknown) => {
+        if (isNotFoundError(error)) {
+          return null;
+        }
+
+        throw error;
+      });
+  }
+
   const order = getOrdersSnapshot().find((candidate) => candidate.id === orderId) ?? null;
 
   if (!order) {
@@ -1140,6 +1407,20 @@ export const fetchAdminOrders = async (
   session: AuthSession | null,
   options?: { query?: string; status?: OrderStatus | "all" },
 ): Promise<Order[]> => {
+  if (isRemoteApiEnabled()) {
+    requirePermission(session, "orders:manage");
+    const { orders } = await apiRequest<{ orders: Order[] }>(
+      withQuery("/admin/orders", {
+        query: options?.query,
+        status: options?.status,
+      }),
+      {},
+      session,
+    );
+
+    return orders;
+  }
+
   requirePermission(session, "orders:manage");
   const query = options?.query?.trim().toLowerCase() ?? "";
   const status = options?.status ?? "all";
@@ -1170,6 +1451,20 @@ export const fetchAdminOrderById = async (
   session: AuthSession | null,
   orderId: string,
 ): Promise<Order | null> => {
+  if (isRemoteApiEnabled()) {
+    requirePermission(session, "orders:manage");
+
+    return apiRequest<{ order: Order }>(`/admin/orders/${encodeURIComponent(orderId)}`, {}, session)
+      .then(({ order }) => order)
+      .catch((error: unknown) => {
+        if (isNotFoundError(error)) {
+          return null;
+        }
+
+        throw error;
+      });
+  }
+
   requirePermission(session, "orders:manage");
 
   return wait(getOrdersSnapshot().find((order) => order.id === orderId) ?? null);
@@ -1180,6 +1475,20 @@ export const updateOrderStatus = async (
   orderId: string,
   status: OrderStatus,
 ) => {
+  if (isRemoteApiEnabled()) {
+    requirePermission(session, "orders:manage");
+    const { order } = await apiRequest<{ order: Order }>(
+      `/admin/orders/${encodeURIComponent(orderId)}/status`,
+      {
+        body: JSON.stringify({ status }),
+        method: "PATCH",
+      },
+      session,
+    );
+
+    return order;
+  }
+
   requirePermission(session, "orders:manage");
 
   const localOrders = getLocalOrders();
@@ -1201,6 +1510,17 @@ export const updateOrderStatus = async (
 export const fetchCustomerAddresses = async (
   session: AuthSession | null,
 ): Promise<CustomerAddress[]> => {
+  if (isRemoteApiEnabled()) {
+    requirePermission(session, "addresses:manage");
+    const { addresses } = await apiRequest<{ addresses: CustomerAddress[] }>(
+      "/account/addresses",
+      {},
+      session,
+    );
+
+    return addresses;
+  }
+
   const authorizedSession = requirePermission(session, "addresses:manage");
 
   return wait(
@@ -1214,6 +1534,20 @@ export const saveCustomerAddress = async (
   session: AuthSession | null,
   input: AddressInput,
 ): Promise<CustomerAddress> => {
+  if (isRemoteApiEnabled()) {
+    requirePermission(session, "addresses:manage");
+    const { address } = await apiRequest<{ address: CustomerAddress }>(
+      "/account/addresses",
+      {
+        body: JSON.stringify(input),
+        method: "POST",
+      },
+      session,
+    );
+
+    return address;
+  }
+
   const authorizedSession = requirePermission(session, "addresses:manage");
   const addresses = getAddressesSnapshot();
   const userAddresses = addresses.filter((address) => address.userId === authorizedSession.user.id);
@@ -1243,6 +1577,13 @@ export const saveCustomerAddress = async (
 };
 
 export const fetchProfile = async (session: AuthSession | null): Promise<Profile> => {
+  if (isRemoteApiEnabled()) {
+    requirePermission(session, "account:read");
+    const { profile } = await apiRequest<{ profile: Profile }>("/account/profile", {}, session);
+
+    return profile;
+  }
+
   const authorizedSession = requirePermission(session, "account:read");
   const profile =
     getProfilesSnapshot().find((candidate) => candidate.id === authorizedSession.user.id) ??
@@ -1261,6 +1602,20 @@ export const fetchAdminProducts = async (
   session: AuthSession | null,
   options?: { query?: string; status?: ProductStatusFilter },
 ): Promise<Product[]> => {
+  if (isRemoteApiEnabled()) {
+    requirePermission(session, "products:manage");
+    const { products } = await apiRequest<{ products: Product[] }>(
+      withQuery("/admin/products", {
+        query: options?.query,
+        status: options?.status,
+      }),
+      {},
+      session,
+    );
+
+    return products;
+  }
+
   requirePermission(session, "products:manage");
 
   const query = options?.query?.trim().toLowerCase() ?? "";
@@ -1297,6 +1652,20 @@ export const updateProductStatus = async (
   productId: string,
   active: boolean,
 ) => {
+  if (isRemoteApiEnabled()) {
+    requirePermission(session, "products:manage");
+    const { product } = await apiRequest<{ product: Product }>(
+      `/admin/products/${encodeURIComponent(productId)}/status`,
+      {
+        body: JSON.stringify({ active }),
+        method: "PATCH",
+      },
+      session,
+    );
+
+    return product;
+  }
+
   requirePermission(session, "products:manage");
 
   const products = getProductsSnapshot();
@@ -1313,6 +1682,20 @@ export const saveProduct = async (
   session: AuthSession | null,
   input: ProductInput,
 ): Promise<Product> => {
+  if (isRemoteApiEnabled()) {
+    requirePermission(session, "products:manage");
+    const { product } = await apiRequest<{ product: Product }>(
+      "/admin/products",
+      {
+        body: JSON.stringify(input),
+        method: "POST",
+      },
+      session,
+    );
+
+    return product;
+  }
+
   requirePermission(session, "products:manage");
 
   const products = getProductsSnapshot();
@@ -1338,6 +1721,12 @@ export const saveProduct = async (
 export const fetchAdminDashboard = async (
   session: AuthSession | null,
 ): Promise<AdminDashboardSummary> => {
+  if (isRemoteApiEnabled()) {
+    requirePermission(session, "orders:manage");
+
+    return apiRequest<AdminDashboardSummary>("/admin/summary", {}, session);
+  }
+
   requirePermission(session, "orders:manage");
 
   const products = getProductsSnapshot();
@@ -1357,6 +1746,17 @@ export const fetchCustomers = async (
   session: AuthSession | null,
   query = "",
 ): Promise<CustomerSummary[]> => {
+  if (isRemoteApiEnabled()) {
+    requirePermission(session, "orders:manage");
+    const { customers } = await apiRequest<{ customers: CustomerSummary[] }>(
+      withQuery("/admin/customers", { query }),
+      {},
+      session,
+    );
+
+    return customers;
+  }
+
   requirePermission(session, "orders:manage");
 
   const customers = new Map<string, CustomerSummary>();

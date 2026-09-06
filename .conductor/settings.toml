@@ -5,6 +5,8 @@ file_include_globs = """
 .env.local
 apps/*/.env
 apps/*/.env.local
+services/*/.env
+services/*/.env.local
 """
 
 [scripts]
