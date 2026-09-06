@@ -55,6 +55,7 @@
     },
     "packages/ui": {
       "project": ["src/**/*.{ts,tsx}"]
-    }
+    },
+    "services/api": {}
   }
 }
