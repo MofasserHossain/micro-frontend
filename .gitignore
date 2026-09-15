@@ -9,3 +9,4 @@ apps/*/.mf
 apps/*/@mf-types
 coverage
 packages/*/src/**/*.d.ts
+config.bat
